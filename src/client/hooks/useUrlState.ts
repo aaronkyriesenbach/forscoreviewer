@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 
-interface UrlState {
+export interface UrlState {
   library: string;
   score: string | null;
   page: number | undefined;
@@ -8,8 +8,8 @@ interface UrlState {
   setlistIndex: number | undefined;
 }
 
-function parseUrl(): UrlState {
-  const segments = window.location.pathname
+export function parseUrl(pathname?: string): UrlState {
+  const segments = (pathname ?? window.location.pathname)
     .split('/')
     .filter(Boolean)
     .map(decodeURIComponent);
@@ -35,7 +35,7 @@ function parseUrl(): UrlState {
   };
 }
 
-function buildPath(state: UrlState): string {
+export function buildPath(state: UrlState): string {
   if (!state.library) return '/';
   let path = `/${encodeURIComponent(state.library)}`;
 

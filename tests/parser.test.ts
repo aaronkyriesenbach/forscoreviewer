@@ -188,6 +188,58 @@ describe('extract4sb', () => {
     });
   });
 
+  describe('.4sb entry skipping', () => {
+    it('skips entries with .4sb extension and does not write them', async () => {
+      const archive = buildSynthetic4sb([
+        { filename: 'metadata.plist', data: Buffer.from('plist data') },
+        { filename: 'nested.4sb', data: Buffer.from('nested archive') },
+        { filename: 'real.txt', data: Buffer.from('real file') },
+      ]);
+
+      const result = await extract4sb(archive, tmpDir);
+
+      expect(result.entries.some((e) => e.path.endsWith('.4sb'))).toBe(false);
+      expect(result.entries.some((e) => e.path === 'real.txt')).toBe(true);
+      expect(existsSync(join(tmpDir, 'nested.4sb'))).toBe(false);
+    });
+  });
+
+  describe('empty and edge cases', () => {
+    it('returns empty entries for archive with only the tag', async () => {
+      const archive = Buffer.from('<--4SBV03-->');
+
+      const result = await extract4sb(archive, tmpDir);
+
+      expect(result.entries).toHaveLength(0);
+      expect(result.plistData).toBeInstanceOf(Uint8Array);
+      expect(result.plistData).toHaveLength(0);
+    });
+
+    it('handles unicode filenames', async () => {
+      const content = Buffer.from('unicode content');
+      const archive = buildSynthetic4sb([
+        { filename: 'Sch\u00f6ne M\u00fcllerin.pdf', data: content },
+      ]);
+
+      const result = await extract4sb(archive, tmpDir);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].path).toBe('Sch\u00f6ne M\u00fcllerin.pdf');
+    });
+
+    it('stores first entry decompressed data as plistData regardless of filename', async () => {
+      const plistContent = Buffer.from('I am the plist');
+      const archive = buildSynthetic4sb([
+        { filename: 'whatever.bin', data: plistContent },
+        { filename: 'second.txt', data: Buffer.from('second') },
+      ]);
+
+      const result = await extract4sb(archive, tmpDir);
+
+      expect(Buffer.from(result.plistData)).toEqual(plistContent);
+    });
+  });
+
   describe('error handling', () => {
     it('skips a corrupted gzip entry without throwing', async () => {
       const archive = Buffer.concat([

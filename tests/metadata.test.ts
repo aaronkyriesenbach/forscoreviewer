@@ -217,3 +217,149 @@ describe('transformPlistToMetadata', () => {
     expect(containsUint8Array(result)).toBe(false);
   });
 });
+
+describe('transformPlistToMetadata edge cases', () => {
+  it('throws TypeError when plist root is an array', () => {
+    const arrayPlist = serializeBplist([1, 2, 3]);
+    expect(() => transformPlistToMetadata(arrayPlist)).toThrow(/object/i);
+  });
+
+  it('returns empty scores and setlists for empty plist', () => {
+    const emptyPlist = serializeBplist({});
+    const result = transformPlistToMetadata(emptyPlist);
+    expect(Object.keys(result.scores)).toHaveLength(0);
+    expect(Object.keys(result.setlists)).toHaveLength(0);
+  });
+
+  it('skips setlist entries where Title is missing', () => {
+    const plist = serializeBplist({
+      '&SET;Bad': [
+        { FilePath: 'test.pdf' },
+        { Title: 'Valid', FilePath: 'test.pdf' },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['Bad']).toHaveLength(1);
+    expect(result.setlists['Bad'][0].title).toBe('Valid');
+  });
+
+  it('skips setlist entries where FilePath is missing', () => {
+    const plist = serializeBplist({
+      '&SET;Bad': [
+        { Title: 'NoFile' },
+        { Title: 'HasFile', FilePath: 'test.pdf' },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['Bad']).toHaveLength(1);
+    expect(result.setlists['Bad'][0].file).toBe('test.pdf');
+  });
+
+  it('skips non-record items in setlist array', () => {
+    const plist = serializeBplist({
+      '&SET;Mixed': [
+        'not a record',
+        42,
+        { Title: 'Valid', FilePath: 'test.pdf' },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['Mixed']).toHaveLength(1);
+  });
+
+  it('parses string page numbers in setlist entries', () => {
+    const plist = serializeBplist({
+      '&SET;Pages': [
+        { Title: 'Item', FilePath: 'test.pdf', 'First Page': '3', 'Last Page': '7' },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['Pages'][0].firstPage).toBe(3);
+    expect(result.setlists['Pages'][0].lastPage).toBe(7);
+  });
+
+  it('treats invalid string page numbers as undefined', () => {
+    const plist = serializeBplist({
+      '&SET;Pages': [
+        { Title: 'Item', FilePath: 'test.pdf', 'First Page': 'abc', 'Last Page': 'xyz' },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['Pages'][0].firstPage).toBeUndefined();
+    expect(result.setlists['Pages'][0].lastPage).toBeUndefined();
+  });
+
+  it('preserves extra setlist entry keys beyond mapped ones', () => {
+    const plist = serializeBplist({
+      '&SET;Extra': [
+        {
+          Title: 'Item',
+          FilePath: 'test.pdf',
+          Bookmark: 'YES',
+          Identifier: 'ABC123',
+          'First Page': '1',
+          'Last Page': '5',
+        },
+      ],
+    });
+    const result = transformPlistToMetadata(plist);
+    const entry = result.setlists['Extra'][0];
+    expect(entry.Bookmark).toBe('YES');
+    expect(entry.Identifier).toBe('ABC123');
+  });
+
+  it('skips keys with multiple pipes in filename', () => {
+    const plist = serializeBplist({
+      'a|b|c': 'should be skipped',
+      'valid.pdf|title': 'Valid Title',
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(Object.keys(result.scores)).toHaveLength(1);
+    expect(result.scores['valid.pdf']).toBeDefined();
+  });
+
+  it('skips key with empty filename before pipe', () => {
+    const plist = serializeBplist({
+      '|title': 'should be skipped',
+      'valid.pdf|title': 'Valid',
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(Object.keys(result.scores)).toHaveLength(1);
+  });
+
+  it('skips key with empty field after pipe', () => {
+    const plist = serializeBplist({
+      'file.pdf|': 'should be skipped',
+      'file.pdf|title': 'Valid',
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.scores['file.pdf'].title).toBe('Valid');
+  });
+
+  it('converts nested objects recursively', () => {
+    const plist = serializeBplist({
+      'test.pdf|custom': { nested: { deep: BigInt(42) } },
+      'test.pdf|title': 'Test',
+    });
+    const result = transformPlistToMetadata(plist);
+    const custom = result.scores['test.pdf'].custom as Record<string, Record<string, number>>;
+    expect(custom.nested.deep).toBe(42);
+  });
+
+  it('handles mapSetlistEntries with non-array value', () => {
+    const plist = serializeBplist({
+      '&SET;NotArray': 'this is a string, not an array',
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.setlists['NotArray']).toEqual([]);
+  });
+
+  it('handles mapBookmarks with non-array value', () => {
+    const plist = serializeBplist({
+      'test.pdf|bookmarks': 'not an array',
+      'test.pdf|title': 'Test',
+    });
+    const result = transformPlistToMetadata(plist);
+    expect(result.scores['test.pdf'].bookmarks).toEqual([]);
+  });
+});

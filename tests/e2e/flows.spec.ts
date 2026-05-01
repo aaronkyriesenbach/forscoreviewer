@@ -112,6 +112,10 @@ test('F13: large PDF with comma in filename renders', async ({ page }) => {
 test('F9: setlist is visible in sidebar', async ({ page }) => {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1000);
+  const setlistsTab = page.locator('button[role="tab"]', { hasText: 'Setlists' });
+  await setlistsTab.click();
+  await page.waitForTimeout(500);
   const body = await page.evaluate(() => document.body.innerText);
   expect(body).toContain('Porchfest');
 });
@@ -120,6 +124,9 @@ test('F10: clicking setlist expands its items', async ({ page }) => {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
+  const setlistsTab = page.locator('button[role="tab"]', { hasText: 'Setlists' });
+  await setlistsTab.click();
+  await page.waitForTimeout(500);
   await page.locator('button', { hasText: 'Porchfest' }).first().click();
   await page.waitForTimeout(1000);
   const body = await page.evaluate(() => document.body.innerText);
