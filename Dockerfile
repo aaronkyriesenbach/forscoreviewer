@@ -1,37 +1,34 @@
-# Multi-stage Dockerfile for forScore Archive Viewer
-
-# Stage 1: builder
-FROM node:22-alpine AS builder
+FROM oven/bun:alpine AS builder
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-# Copy source and build
 COPY . .
-RUN npm run build
+RUN bun run build
 
-# Stage 2: runner
-FROM node:22-alpine AS runner
+FROM oven/bun:alpine AS runner
 WORKDIR /app
 
-# Only production deps
-COPY package*.json ./
-RUN npm ci --omit=dev
+RUN apk add --no-cache dumb-init \
+ && mkdir -p /data/libraries \
+ && chown -R bun:bun /data
 
-# Copy built artifacts from builder
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
 COPY --from=builder /app/dist ./dist
 
-# Environment
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATA_DIR=/data
 
 EXPOSE 3000
 
-# Ensure data directory exists (will be overridden by volume mount at runtime)
-RUN mkdir -p /data/libraries
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/ || exit 1
 
-# Run the compiled server
-CMD ["node", "dist/server/index.js"]
+USER bun
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["bun", "run", "dist/server/index.js"]
