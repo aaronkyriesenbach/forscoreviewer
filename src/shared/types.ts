@@ -24,6 +24,9 @@ export interface Bookmark {
 export interface SetlistEntry {
   title: string;
   file: string;            // PDF filename (e.g., "Jerry Songbook.pdf")
+  firstPage?: number;
+  lastPage?: number;
+  [key: string]: unknown;  // remaining plist fields (Bookmark, Identifier, etc.)
 }
 
 // Complete library metadata (written as metadata.json)

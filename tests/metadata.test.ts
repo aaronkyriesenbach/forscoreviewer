@@ -47,11 +47,11 @@ function buildTestPlist(): Uint8Array {
 
     // ── Setlists ────────────────────────────────────────────────────
     '&SET;Recital': [
-      { Title: 'Sonata K.545', FilePath: 'Sonata K.545.pdf' },
-      { Title: 'Minute Waltz', FilePath: 'Waltz Op.64.pdf' },
+      { Title: 'Sonata K.545', FilePath: 'Sonata K.545.pdf', 'First Page': '1', 'Last Page': '5', Bookmark: 'YES', Identifier: 'A1B2C3' },
+      { Title: 'Minute Waltz', FilePath: 'Waltz Op.64.pdf', 'First Page': '1', 'Last Page': '0', Bookmark: 'YES' },
     ],
     '&SET;Practice': [
-      { Title: 'Prelude', FilePath: 'Prelude BWV 846.pdf' },
+      { Title: 'Prelude', FilePath: 'Prelude BWV 846.pdf', 'First Page': '3', 'Last Page': '7' },
     ],
 
     // ── Filtered keys ───────────────────────────────────────────────
@@ -133,15 +133,21 @@ describe('transformPlistToMetadata', () => {
     expect(Object.keys(result.setlists)).toHaveLength(2);
 
     expect(result.setlists['Recital']).toHaveLength(2);
-    expect(result.setlists['Recital'][0]).toEqual({
+    expect(result.setlists['Recital'][0]).toMatchObject({
       title: 'Sonata K.545',
       file: 'Sonata K.545.pdf',
+      firstPage: 1,
+      lastPage: 5,
+      Bookmark: 'YES',
+      Identifier: 'A1B2C3',
     });
 
     expect(result.setlists['Practice']).toHaveLength(1);
-    expect(result.setlists['Practice'][0]).toEqual({
+    expect(result.setlists['Practice'][0]).toMatchObject({
       title: 'Prelude',
       file: 'Prelude BWV 846.pdf',
+      firstPage: 3,
+      lastPage: 7,
     });
   });
 
@@ -182,6 +188,13 @@ describe('transformPlistToMetadata', () => {
         expect(typeof entry.file).toBe('string');
       }
     }
+  });
+
+  it('maps setlist Last Page 0 to undefined lastPage', () => {
+    const result = transformPlistToMetadata(plistData);
+    const waltz = result.setlists['Recital'][1];
+    expect(waltz.firstPage).toBe(1);
+    expect(waltz.lastPage).toBeUndefined();
   });
 
   it('serializes to JSON without error (no unconvertible bigint values)', () => {

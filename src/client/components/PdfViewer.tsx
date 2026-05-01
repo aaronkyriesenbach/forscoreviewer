@@ -38,6 +38,13 @@ interface PdfViewerProps {
   pdfFilename?: string;
   annotationPages?: Set<number>;
   jumpToPage?: number;
+  pageRange?: { start: number; end: number };
+  setlistPageOffset?: number;
+  setlistTotalPages?: number;
+  onPrevBoundary?: () => void;
+  onNextBoundary?: () => void;
+  itemLabel?: string;
+  onDocumentPageCount?: (filename: string, numPages: number) => void;
 }
 
 export function PdfViewer({
@@ -47,6 +54,13 @@ export function PdfViewer({
   pdfFilename,
   annotationPages,
   jumpToPage,
+  pageRange,
+  setlistPageOffset = 0,
+  setlistTotalPages = 0,
+  onPrevBoundary,
+  onNextBoundary,
+  itemLabel,
+  onDocumentPageCount,
 }: PdfViewerProps) {
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,8 +70,11 @@ export function PdfViewer({
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [zoom, setZoom] = useState(1.0);
   const [pageDimensions, setPageDimensions] = useState<PageDimensions | null>(null);
-  // null = auto (show as many pages as fit side by side)
   const [userPagesPerView, setUserPagesPerView] = useState<number | null>(null);
+
+  const rangeStart = pageRange?.start ?? 1;
+  const rangeEnd = pageRange ? Math.min(pageRange.end, numPages || pageRange.end) : numPages;
+  const rangeTotal = rangeEnd - rangeStart + 1;
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -72,11 +89,17 @@ export function PdfViewer({
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
+    setCurrentPage(pageRange?.start ?? 1);
     setPageDimensions(null);
     setZoom(1.0);
     setUserPagesPerView(null);
   }, [pdfUrl]);
+
+  useEffect(() => {
+    if (pageRange) {
+      setCurrentPage(pageRange.start);
+    }
+  }, [pageRange?.start, pageRange?.end]);
 
   useEffect(() => {
     if (jumpToPage && jumpToPage >= 1 && jumpToPage <= numPages) {
@@ -99,23 +122,37 @@ export function PdfViewer({
 
   const pagesPerView = useMemo(() => {
     const desired = userPagesPerView ?? maxPages;
-    return Math.max(1, Math.min(desired, maxPages, numPages || 1));
-  }, [userPagesPerView, maxPages, numPages]);
+    return Math.max(1, Math.min(desired, maxPages, rangeTotal || 1));
+  }, [userPagesPerView, maxPages, rangeTotal]);
 
-  const pagesToRender = Math.min(pagesPerView, numPages - currentPage + 1);
+  const pagesToRender = Math.min(pagesPerView, rangeEnd - currentPage + 1);
   const lastVisiblePage = currentPage + pagesToRender - 1;
 
+  const atRangeStart = currentPage <= rangeStart;
+  const atRangeEnd = lastVisiblePage >= rangeEnd;
+
   const goToPrev = useCallback(() => {
-    const newPage = Math.max(1, currentPage - pagesPerView);
-    setCurrentPage(newPage);
-    onPageChange?.(newPage);
-  }, [pagesPerView, currentPage, onPageChange]);
+    if (!atRangeStart) {
+      const newPage = Math.max(rangeStart, currentPage - pagesPerView);
+      setCurrentPage(newPage);
+      onPageChange?.(newPage);
+    } else if (onPrevBoundary) {
+      onPrevBoundary();
+    }
+  }, [atRangeStart, rangeStart, pagesPerView, currentPage, onPageChange, onPrevBoundary]);
 
   const goToNext = useCallback(() => {
-    const newPage = Math.min(numPages, currentPage + pagesPerView);
-    setCurrentPage(newPage);
-    onPageChange?.(newPage);
-  }, [pagesPerView, numPages, currentPage, onPageChange]);
+    if (!atRangeEnd) {
+      const newPage = Math.min(rangeEnd, currentPage + pagesPerView);
+      setCurrentPage(newPage);
+      onPageChange?.(newPage);
+    } else if (onNextBoundary) {
+      onNextBoundary();
+    }
+  }, [atRangeEnd, rangeEnd, pagesPerView, currentPage, onPageChange, onNextBoundary]);
+
+  const prevDisabled = atRangeStart && !onPrevBoundary;
+  const nextDisabled = atRangeEnd && !onNextBoundary;
 
   const canZoomIn = zoom < ZOOM_STEPS[ZOOM_STEPS.length - 1];
   const canZoomOut = zoom > ZOOM_STEPS[0];
@@ -165,13 +202,24 @@ export function PdfViewer({
 
   const pagesSelectValue = userPagesPerView === null ? 'auto' : String(pagesPerView);
 
+  const inSetlistMode = setlistTotalPages > 0;
+  const displayCurrentPage = inSetlistMode
+    ? setlistPageOffset + currentPage - rangeStart + 1
+    : currentPage;
+  const displayLastPage = inSetlistMode
+    ? setlistPageOffset + lastVisiblePage - rangeStart + 1
+    : lastVisiblePage;
+  const displayTotalPages = inSetlistMode ? setlistTotalPages : numPages;
+
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center justify-between p-2 border-b gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
-          <span className="text-sm font-semibold whitespace-nowrap">forScore Viewer</span>
+          <span className="text-sm font-semibold whitespace-nowrap truncate">
+            {itemLabel ?? 'forScore Viewer'}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -231,19 +279,19 @@ export function PdfViewer({
 
           <Separator orientation="vertical" className="h-6" />
 
-          <Button variant="outline" size="icon" onClick={goToPrev} disabled={currentPage <= 1}>
+          <Button variant="outline" size="icon" onClick={goToPrev} disabled={prevDisabled}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm text-muted-foreground whitespace-nowrap">
             {pagesToRender > 1
-              ? `Pages ${currentPage}\u2013${lastVisiblePage} of ${numPages}`
-              : `Page ${currentPage} of ${numPages}`}
+              ? `Pages ${displayCurrentPage}\u2013${displayLastPage} of ${displayTotalPages}`
+              : `Page ${displayCurrentPage} of ${displayTotalPages}`}
           </span>
           <Button
             variant="outline"
             size="icon"
             onClick={goToNext}
-            disabled={lastVisiblePage >= numPages}
+            disabled={nextDisabled}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -259,7 +307,9 @@ export function PdfViewer({
           file={pdfUrl}
           onLoadSuccess={({ numPages: n }) => {
             setNumPages(n);
-            setCurrentPage(1);
+            if (pdfFilename) {
+              onDocumentPageCount?.(pdfFilename, n);
+            }
           }}
           onLoadError={(err) => {
             console.error('[PDF]', err?.message ?? String(err));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Music } from 'lucide-react';
 import {
   SidebarGroup,
@@ -15,11 +15,24 @@ import type { SetlistEntry } from '@/shared/types';
 
 interface SetlistPanelProps {
   setlists: Record<string, SetlistEntry[]>;
-  onScoreSelect: (filename: string) => void;
+  onItemSelect: (setlistName: string, index: number) => void;
+  activeSetlist: string | null;
+  activeItemIndex: number | undefined;
 }
 
-export function SetlistPanel({ setlists, onScoreSelect }: SetlistPanelProps) {
+export function SetlistPanel({
+  setlists,
+  onItemSelect,
+  activeSetlist,
+  activeItemIndex,
+}: SetlistPanelProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeSetlist) {
+      setExpanded(activeSetlist);
+    }
+  }, [activeSetlist]);
 
   const setlistEntries = Object.entries(setlists);
   if (setlistEntries.length === 0) {
@@ -52,7 +65,8 @@ export function SetlistPanel({ setlists, onScoreSelect }: SetlistPanelProps) {
                       <SidebarMenuSubItem key={`${item.file}-${idx}`}>
                         <SidebarMenuSubButton
                           asChild
-                          onClick={() => onScoreSelect(item.file)}
+                          isActive={activeSetlist === name && activeItemIndex === idx}
+                          onClick={() => onItemSelect(name, idx)}
                           className="cursor-pointer"
                         >
                           <div>

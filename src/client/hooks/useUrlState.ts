@@ -4,6 +4,8 @@ interface UrlState {
   library: string;
   score: string | null;
   page: number | undefined;
+  setlist: string | null;
+  setlistIndex: number | undefined;
 }
 
 function parseUrl(): UrlState {
@@ -12,28 +14,49 @@ function parseUrl(): UrlState {
     .filter(Boolean)
     .map(decodeURIComponent);
 
+  const library = segments[0] ?? '';
+
+  if (segments[1] === 'setlist' && segments[2]) {
+    const rawIndex = segments[3] ? parseInt(segments[3], 10) : undefined;
+    const setlistIndex =
+      rawIndex && Number.isFinite(rawIndex) && rawIndex >= 1 ? rawIndex - 1 : 0;
+
+    return { library, score: null, page: undefined, setlist: segments[2], setlistIndex };
+  }
+
   const rawPage = segments[2] ? parseInt(segments[2], 10) : undefined;
 
   return {
-    library: segments[0] ?? '',
+    library,
     score: segments[1] ?? null,
     page: rawPage && Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : undefined,
+    setlist: null,
+    setlistIndex: undefined,
   };
 }
 
-function buildPath(library: string, score: string | null, page: number | undefined): string {
-  if (!library) return '/';
-  let path = `/${encodeURIComponent(library)}`;
-  if (score) {
-    path += `/${encodeURIComponent(score)}`;
-    if (page !== undefined && page > 1) {
-      path += `/${page}`;
+function buildPath(state: UrlState): string {
+  if (!state.library) return '/';
+  let path = `/${encodeURIComponent(state.library)}`;
+
+  if (state.setlist) {
+    path += `/setlist/${encodeURIComponent(state.setlist)}`;
+    if (state.setlistIndex !== undefined && state.setlistIndex > 0) {
+      path += `/${state.setlistIndex + 1}`;
+    }
+    return path;
+  }
+
+  if (state.score) {
+    path += `/${encodeURIComponent(state.score)}`;
+    if (state.page !== undefined && state.page > 1) {
+      path += `/${state.page}`;
     }
   }
   return path;
 }
 
-/** URL format: `/<library>/<score>/<page>` — page 1 is omitted for cleanliness. */
+/** URL format: `/<library>/<score>/<page>` or `/<library>/setlist/<name>/<1-based-index>` */
 export function useUrlState() {
   const [state, setState] = useState<UrlState>(parseUrl);
 
@@ -51,42 +74,89 @@ export function useUrlState() {
   }, []);
 
   const setLibrary = useCallback((library: string) => {
-    const next: UrlState = { library, score: null, page: undefined };
+    const next: UrlState = {
+      library,
+      score: null,
+      page: undefined,
+      setlist: null,
+      setlistIndex: undefined,
+    };
     setState(next);
     stateRef.current = next;
-    window.history.pushState(null, '', buildPath(library, null, undefined));
+    window.history.pushState(null, '', buildPath(next));
   }, []);
 
   const setScore = useCallback((score: string | null) => {
-    const library = stateRef.current.library;
-    const next: UrlState = { library, score, page: undefined };
+    const next: UrlState = {
+      library: stateRef.current.library,
+      score,
+      page: undefined,
+      setlist: null,
+      setlistIndex: undefined,
+    };
     setState(next);
     stateRef.current = next;
-    window.history.pushState(null, '', buildPath(library, score, undefined));
+    window.history.pushState(null, '', buildPath(next));
   }, []);
 
   const setPage = useCallback((page: number | undefined) => {
-    const { library, score } = stateRef.current;
-    const next: UrlState = { library, score, page };
+    const prev = stateRef.current;
+    const next: UrlState = { ...prev, page };
     setState(next);
     stateRef.current = next;
-    window.history.replaceState(null, '', buildPath(library, score, page));
+    window.history.replaceState(null, '', buildPath(next));
   }, []);
 
   const replaceLibrary = useCallback((library: string) => {
-    const next: UrlState = { library, score: null, page: undefined };
+    const next: UrlState = {
+      library,
+      score: null,
+      page: undefined,
+      setlist: null,
+      setlistIndex: undefined,
+    };
     setState(next);
     stateRef.current = next;
-    window.history.replaceState(null, '', buildPath(library, null, undefined));
+    window.history.replaceState(null, '', buildPath(next));
+  }, []);
+
+  const setSetlistItem = useCallback((setlist: string, setlistIndex: number) => {
+    const next: UrlState = {
+      library: stateRef.current.library,
+      score: null,
+      page: undefined,
+      setlist,
+      setlistIndex,
+    };
+    setState(next);
+    stateRef.current = next;
+    window.history.pushState(null, '', buildPath(next));
+  }, []);
+
+  const replaceSetlistItem = useCallback((setlist: string, setlistIndex: number) => {
+    const next: UrlState = {
+      library: stateRef.current.library,
+      score: null,
+      page: undefined,
+      setlist,
+      setlistIndex,
+    };
+    setState(next);
+    stateRef.current = next;
+    window.history.replaceState(null, '', buildPath(next));
   }, []);
 
   return {
     library: state.library,
     score: state.score,
     page: state.page,
+    setlist: state.setlist,
+    setlistIndex: state.setlistIndex,
     setLibrary,
     setScore,
     setPage,
     replaceLibrary,
+    setSetlistItem,
+    replaceSetlistItem,
   } as const;
 }

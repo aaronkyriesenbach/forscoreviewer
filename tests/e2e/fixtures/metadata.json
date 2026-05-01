@@ -28,8 +28,8 @@
   },
   "setlists": {
     "Porchfest": [
-      { "title": "Jack Straw", "file": "12 Bar Blues.pdf" },
-      { "title": "Bird Song", "file": "12 Bar Blues.pdf" }
+      { "title": "Jack Straw", "file": "12 Bar Blues.pdf", "firstPage": 5, "lastPage": 8 },
+      { "title": "Bird Song", "file": "12 Bar Blues.pdf", "firstPage": 1, "lastPage": 3 }
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   SidebarContent,
   SidebarMenu,
@@ -18,10 +18,9 @@ import { Button } from '@/client/components/ui/button';
 import { UploadDialog } from '@/client/components/UploadDialog';
 import { SetlistPanel } from '@/client/components/SetlistPanel';
 import { BookmarkList } from '@/client/components/BookmarkList';
-import { useMetadata } from '@/client/hooks/useMetadata';
 import { createSearchIndex, searchScores } from '@/client/lib/search';
 import { deleteLibrary } from '@/client/lib/api';
-import type { LibraryInfo } from '@/shared/types';
+import type { LibraryInfo, LibraryMetadata } from '@/shared/types';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/client/lib/utils';
 
@@ -30,28 +29,44 @@ type SidebarTab = 'scores' | 'setlists';
 interface AppSidebarProps {
   libraries: LibraryInfo[];
   isLoadingLibraries: boolean;
+  metadata: LibraryMetadata | null;
+  isLoadingMetadata: boolean;
   selectedScore: string | null;
-  onScoreSelect: (filename: string) => void;
+  onScoreSelect: (filename: string, page?: number) => void;
   onBookmarkClick: (page: number) => void;
-  onLibraryChange: (library: string) => void;
+  onSetlistItemSelect: (setlistName: string, index: number) => void;
+  activeSetlist: string | null;
+  activeSetlistIndex: number | undefined;
   selectedLibrary: string;
+  onLibraryChange: (library: string) => void;
   onRefreshLibraries: () => void;
 }
 
 export function AppSidebar({
   libraries,
   isLoadingLibraries,
+  metadata,
+  isLoadingMetadata,
   selectedScore,
   onScoreSelect,
   onBookmarkClick,
-  onLibraryChange,
+  onSetlistItemSelect,
+  activeSetlist,
+  activeSetlistIndex,
   selectedLibrary,
+  onLibraryChange,
   onRefreshLibraries,
 }: AppSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SidebarTab>('scores');
 
-  const { metadata, isLoading: isLoadingMetadata } = useMetadata(selectedLibrary || null);
+  useEffect(() => {
+    if (activeSetlist) {
+      setActiveTab('setlists');
+    } else if (selectedScore) {
+      setActiveTab('scores');
+    }
+  }, [activeSetlist, selectedScore]);
 
   const handleDeleteLibrary = async () => {
     if (!selectedLibrary) {
@@ -216,7 +231,9 @@ export function AppSidebar({
             ) : (
               <SetlistPanel
                 setlists={metadata!.setlists}
-                onScoreSelect={onScoreSelect}
+                onItemSelect={onSetlistItemSelect}
+                activeSetlist={activeSetlist}
+                activeItemIndex={activeSetlistIndex}
               />
             )}
           </>

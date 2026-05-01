@@ -57,6 +57,18 @@ function convertValue(value: unknown): unknown {
   return value;
 }
 
+function parsePageNumber(value: unknown): number | undefined {
+  if (typeof value === 'string') {
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  }
+
+  const converted = convertValue(value);
+  return isFiniteNumber(converted) && converted >= 0 ? converted : undefined;
+}
+
+const SETLIST_MAPPED_KEYS = new Set(['Title', 'FilePath', 'First Page', 'Last Page']);
+
 function mapSetlistEntries(value: unknown): SetlistEntry[] {
   if (!Array.isArray(value)) {
     return [];
@@ -74,7 +86,30 @@ function mapSetlistEntries(value: unknown): SetlistEntry[] {
       return [];
     }
 
-    return [{ title, file }];
+    const entry: SetlistEntry = { title, file };
+
+    const firstPage = parsePageNumber(item['First Page']);
+    if (firstPage !== undefined) {
+      entry.firstPage = firstPage;
+    }
+
+    const lastPage = parsePageNumber(item['Last Page']);
+    if (lastPage !== undefined && lastPage > 0) {
+      entry.lastPage = lastPage;
+    }
+
+    for (const [key, entryValue] of Object.entries(item)) {
+      if (SETLIST_MAPPED_KEYS.has(key)) {
+        continue;
+      }
+
+      const converted = convertValue(entryValue);
+      if (converted !== undefined) {
+        entry[key] = converted;
+      }
+    }
+
+    return [entry];
   });
 }
 
