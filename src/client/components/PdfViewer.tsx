@@ -82,10 +82,6 @@ export function PdfViewer({
     }
   }, [jumpToPage, numPages]);
 
-  useEffect(() => {
-    onPageChange?.(currentPage);
-  }, [currentPage, onPageChange]);
-
   const pageHeight = containerHeight > 0 ? Math.floor(containerHeight * zoom) : 0;
 
   const pageWidth = useMemo(() => {
@@ -108,12 +104,16 @@ export function PdfViewer({
   const lastVisiblePage = currentPage + pagesToRender - 1;
 
   const goToPrev = useCallback(() => {
-    setCurrentPage((prev) => Math.max(1, prev - pagesPerView));
-  }, [pagesPerView]);
+    const newPage = Math.max(1, currentPage - pagesPerView);
+    setCurrentPage(newPage);
+    onPageChange?.(newPage);
+  }, [pagesPerView, currentPage, onPageChange]);
 
   const goToNext = useCallback(() => {
-    setCurrentPage((prev) => Math.min(numPages, prev + pagesPerView));
-  }, [pagesPerView, numPages]);
+    const newPage = Math.min(numPages, currentPage + pagesPerView);
+    setCurrentPage(newPage);
+    onPageChange?.(newPage);
+  }, [pagesPerView, numPages, currentPage, onPageChange]);
 
   const canZoomIn = zoom < ZOOM_STEPS[ZOOM_STEPS.length - 1];
   const canZoomOut = zoom > ZOOM_STEPS[0];

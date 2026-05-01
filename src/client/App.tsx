@@ -1,45 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Layout } from '@/client/components/Layout';
 import { AppSidebar } from '@/client/components/AppSidebar';
 import { PdfViewer } from '@/client/components/PdfViewer';
 import { useLibraries } from '@/client/hooks/useLibraries';
 import { useAnnotations } from '@/client/hooks/useAnnotations';
+import { useUrlState } from '@/client/hooks/useUrlState';
 import { getDocumentUrl } from '@/client/lib/api';
 import '@/client/globals.css';
 
 function App() {
   const { libraries, isLoading: isLoadingLibraries, refresh: refreshLibraries } = useLibraries();
-  const [selectedLibrary, setSelectedLibrary] = useState<string>('');
-  const [selectedScore, setSelectedScore] = useState<string | null>(null);
-  const [jumpToPage, setJumpToPage] = useState<number | undefined>(undefined);
+  const {
+    library: selectedLibrary,
+    score: selectedScore,
+    page,
+    setLibrary,
+    setScore,
+    setPage,
+    replaceLibrary,
+  } = useUrlState();
 
   const annotationMap = useAnnotations(selectedLibrary || null);
 
   useEffect(() => {
+    if (isLoadingLibraries) return;
+
     if (!selectedLibrary && libraries.length > 0) {
-      setSelectedLibrary(libraries[0].name);
-      setSelectedScore(null);
-      setJumpToPage(undefined);
+      replaceLibrary(libraries[0].name);
       return;
     }
 
-    if (selectedLibrary && !libraries.some((library) => library.name === selectedLibrary)) {
-      setSelectedLibrary(libraries[0]?.name ?? '');
-      setSelectedScore(null);
-      setJumpToPage(undefined);
+    if (selectedLibrary && !libraries.some((lib) => lib.name === selectedLibrary)) {
+      replaceLibrary(libraries[0]?.name ?? '');
     }
-  }, [libraries, selectedLibrary]);
+  }, [libraries, selectedLibrary, replaceLibrary, isLoadingLibraries]);
 
-  const handleLibraryChange = (library: string) => {
-    setSelectedLibrary(library);
-    setSelectedScore(null);
-    setJumpToPage(undefined);
-  };
+  const handlePageChange = useCallback((pageNum: number) => {
+    setPage(pageNum);
+  }, [setPage]);
 
-  const handleScoreSelect = (filename: string) => {
-    setSelectedScore(filename);
-    setJumpToPage(undefined);
-  };
+  const handleBookmarkClick = useCallback((pageNum: number) => {
+    setPage(pageNum);
+  }, [setPage]);
 
   const pdfUrl = selectedScore && selectedLibrary
     ? getDocumentUrl(selectedLibrary, selectedScore)
@@ -56,10 +58,10 @@ function App() {
           libraries={libraries}
           isLoadingLibraries={isLoadingLibraries}
           selectedScore={selectedScore}
-          onScoreSelect={handleScoreSelect}
-          onBookmarkClick={setJumpToPage}
+          onScoreSelect={setScore}
+          onBookmarkClick={handleBookmarkClick}
           selectedLibrary={selectedLibrary}
-          onLibraryChange={handleLibraryChange}
+          onLibraryChange={setLibrary}
           onRefreshLibraries={refreshLibraries}
         />
       }
@@ -79,7 +81,8 @@ function App() {
             libraryName={selectedLibrary}
             pdfFilename={selectedScore ?? undefined}
             annotationPages={annotationPages}
-            jumpToPage={jumpToPage}
+            jumpToPage={page}
+            onPageChange={handlePageChange}
           />
         )}
       </div>
