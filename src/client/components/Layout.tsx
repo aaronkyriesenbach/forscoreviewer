@@ -64,7 +64,7 @@ export function Layout({ sidebar, children }: LayoutProps) {
 
   return (
     <SidebarProvider
-      className={cn(isResizing && 'sidebar-resizing')}
+      className={cn('h-svh', isResizing && 'sidebar-resizing')}
       style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
     >
       <Sidebar>

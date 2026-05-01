@@ -42,6 +42,16 @@ html, body, #root {
   transition-duration: 0s !important;
 }
 
+/*
+ * react-pdf Canvas sets visibility:hidden during async render and only restores
+ * it on success. If the render is interrupted (e.g. by a ResizeObserver-triggered
+ * re-render during zoom), the canvas stays permanently hidden. Force it visible
+ * so the worst case is a brief blank flash instead of a disappeared page.
+ */
+.react-pdf__Page canvas {
+  visibility: visible !important;
+}
+
 .dark {
   --background: hsl(240 10% 3.9%);
   --foreground: hsl(0 0% 98%);

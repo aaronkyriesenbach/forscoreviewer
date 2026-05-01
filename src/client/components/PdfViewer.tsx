@@ -251,15 +251,15 @@ export function PdfViewer({
             console.error('[PDF]', err?.message ?? String(err));
           }}
           loading={
-            <div className="p-8">
-              <Skeleton className="h-[600px] w-full" />
+            <div className="p-8 m-auto">
+              <Skeleton className="h-[600px] w-[400px]" />
             </div>
           }
-          error={<p className="text-destructive p-4">Failed to load PDF: {pdfUrl}</p>}
-          className="flex justify-center items-center gap-4 min-h-full"
+          error={<p className="text-destructive p-4 m-auto">Failed to load PDF: {pdfUrl}</p>}
+          className="flex min-h-full min-w-full w-max"
         >
           {containerWidth > 0 && containerHeight > 0 && numPages > 0 && (
-            <>
+            <div className="flex gap-4 m-auto">
               {Array.from({ length: pagesToRender }, (_, i) => {
                 const pageNum = currentPage + i;
                 return (
@@ -299,7 +299,7 @@ export function PdfViewer({
                   </div>
                 );
               })}
-            </>
+            </div>
           )}
         </Document>
       </div>
