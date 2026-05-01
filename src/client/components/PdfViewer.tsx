@@ -265,7 +265,7 @@ export function PdfViewer({
               {Array.from({ length: pagesToRender }, (_, i) => {
                 const pageNum = currentPage + i;
                 return (
-                  <div key={pageNum} style={{ position: 'relative' }}>
+                  <div key={pageNum} className="border border-border" style={{ position: 'relative' }}>
                     <Page
                       pageNumber={pageNum}
                       height={pageHeight > 0 ? pageHeight : undefined}
