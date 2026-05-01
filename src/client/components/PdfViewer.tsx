@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/client/components/ui/select';
 import { getAnnotationUrl } from '@/client/lib/api';
+import { ThemeToggle } from '@/client/components/ThemeToggle';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -246,6 +247,9 @@ export function PdfViewer({
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+
+          <Separator orientation="vertical" className="h-6" />
+          <ThemeToggle />
         </div>
       </div>
 

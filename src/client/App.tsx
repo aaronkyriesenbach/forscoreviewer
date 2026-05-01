@@ -4,6 +4,7 @@ import { AppSidebar } from '@/client/components/AppSidebar';
 import { PdfViewer } from '@/client/components/PdfViewer';
 import { SidebarTrigger } from '@/client/components/ui/sidebar';
 import { Separator } from '@/client/components/ui/separator';
+import { ThemeToggle } from '@/client/components/ThemeToggle';
 import { useLibraries } from '@/client/hooks/useLibraries';
 import { useAnnotations } from '@/client/hooks/useAnnotations';
 import { useUrlState } from '@/client/hooks/useUrlState';
@@ -75,6 +76,9 @@ function App() {
               <SidebarTrigger />
               <Separator orientation="vertical" className="h-4" />
               <span className="text-sm font-semibold">forScore Viewer</span>
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
             </div>
             <div className="flex items-center justify-center flex-1">
               <p className="text-muted-foreground">

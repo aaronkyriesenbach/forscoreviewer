@@ -6,6 +6,17 @@
     <title>forScore Viewer</title>
   </head>
   <body>
+    <script>
+      // Apply dark class before first paint to prevent FOUC.
+      // Reads localStorage, falls back to system preference.
+      (function() {
+        var stored = null;
+        try { stored = localStorage.getItem('theme'); } catch(e) {}
+        var dark = stored === 'dark' ||
+          (stored === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/main.tsx"></script>
   </body>
