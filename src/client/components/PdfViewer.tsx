@@ -7,6 +7,7 @@ import { Button } from '@/client/components/ui/button';
 import { Toggle } from '@/client/components/ui/toggle';
 import { Skeleton } from '@/client/components/ui/skeleton';
 import { Separator } from '@/client/components/ui/separator';
+import { SidebarTrigger } from '@/client/components/ui/sidebar';
 import {
   Select,
   SelectContent,
@@ -167,19 +168,26 @@ export function PdfViewer({
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center justify-between p-2 border-b gap-2">
         <div className="flex items-center gap-2">
-          {libraryName && (
-            <Toggle
-              pressed={showAnnotations}
-              onPressedChange={setShowAnnotations}
-              size="sm"
-              aria-label="Toggle annotations"
-            >
-              <Pencil className="h-4 w-4 mr-1" /> Annotations
-            </Toggle>
-          )}
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="h-4" />
+          <span className="text-sm font-semibold whitespace-nowrap">forScore Viewer</span>
         </div>
 
         <div className="flex items-center gap-2">
+          {libraryName && (
+            <>
+              <Toggle
+                pressed={showAnnotations}
+                onPressedChange={setShowAnnotations}
+                size="sm"
+                aria-label="Toggle annotations"
+              >
+                <Pencil className="h-4 w-4 mr-1" /> Annotations
+              </Toggle>
+              <Separator orientation="vertical" className="h-6" />
+            </>
+          )}
+
           <div className="flex items-center gap-1">
             <Button
               variant="outline"

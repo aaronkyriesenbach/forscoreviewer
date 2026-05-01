@@ -2,6 +2,8 @@ import { useCallback, useEffect } from 'react';
 import { Layout } from '@/client/components/Layout';
 import { AppSidebar } from '@/client/components/AppSidebar';
 import { PdfViewer } from '@/client/components/PdfViewer';
+import { SidebarTrigger } from '@/client/components/ui/sidebar';
+import { Separator } from '@/client/components/ui/separator';
 import { useLibraries } from '@/client/hooks/useLibraries';
 import { useAnnotations } from '@/client/hooks/useAnnotations';
 import { useUrlState } from '@/client/hooks/useUrlState';
@@ -66,15 +68,22 @@ function App() {
         />
       }
     >
-      <div className="flex-1 h-full overflow-hidden">
+      <div className="flex flex-col flex-1 h-full overflow-hidden">
         {!pdfUrl ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">
-              {libraries.length === 0
-                ? 'Upload a library using the "+ Add Library" button in the sidebar.'
-                : 'Select a score to view it.'}
-            </p>
-          </div>
+          <>
+            <div className="flex items-center gap-2 p-2 border-b">
+              <SidebarTrigger />
+              <Separator orientation="vertical" className="h-4" />
+              <span className="text-sm font-semibold">forScore Viewer</span>
+            </div>
+            <div className="flex items-center justify-center flex-1">
+              <p className="text-muted-foreground">
+                {libraries.length === 0
+                  ? 'Upload a library using the "+ Add Library" button in the sidebar.'
+                  : 'Select a score to view it.'}
+              </p>
+            </div>
+          </>
         ) : (
           <PdfViewer
             pdfUrl={pdfUrl}
