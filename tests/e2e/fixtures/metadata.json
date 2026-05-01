@@ -1,0 +1,35 @@
+{
+  "scores": {
+    "12 Bar Blues.pdf": {
+      "title": "12 Bar Blues",
+      "composer": "Traditional",
+      "genre": "Blues",
+      "keywords": "piano",
+      "labels": "solo"
+    },
+    "11 Bagatelles, Op.119.pdf": {
+      "title": "11 Bagatelles, Op.119",
+      "composer": "Ludwig van Beethoven",
+      "genre": "Classical",
+      "keywords": "piano",
+      "labels": "solo",
+      "bookmarks": [
+        { "title": "No. 1 in G minor", "firstPage": 1 },
+        { "title": "No. 2 in C major", "firstPage": 2 }
+      ]
+    },
+    "Violin Concerto in E Minor, Op.64.pdf": {
+      "title": "Violin Concerto in E Minor, Op.64",
+      "composer": "Felix Mendelssohn",
+      "genre": "Classical",
+      "keywords": "violin",
+      "labels": "solo_with_accompaniment"
+    }
+  },
+  "setlists": {
+    "Porchfest": [
+      { "title": "Jack Straw", "file": "12 Bar Blues.pdf" },
+      { "title": "Bird Song", "file": "12 Bar Blues.pdf" }
+    ]
+  }
+}
