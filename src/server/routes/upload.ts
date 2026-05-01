@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 import { Hono } from 'hono';
@@ -38,7 +38,9 @@ uploadRouter.post('/:name/upload', async (c) => {
     mkdirSync(tempDir, { recursive: true });
     tempCreated = true;
 
-    writeFileSync(join(tempDir, 'archive.4sb'), buf);
+    const archivesDir = join(tempDir, 'archives');
+    mkdirSync(archivesDir, { recursive: true });
+    writeFileSync(join(archivesDir, `archive-${Date.now()}.4sb`), buf);
 
     let plistData: Uint8Array;
     let scoreCount: number;
@@ -66,12 +68,28 @@ uploadRouter.post('/:name/upload', async (c) => {
     scoreCount = Object.keys(metadata.scores).length;
 
     const finalDir = join(DATA_DIR, 'libraries', name);
+    const oldArchivesDir = join(finalDir, 'archives');
+    const tempArchivesBackup = join(DATA_DIR, 'libraries', `.tmp-archives-${name}-${Date.now()}`);
+    let hasOldArchives = false;
+
+    if (existsSync(oldArchivesDir)) {
+      renameSync(oldArchivesDir, tempArchivesBackup);
+      hasOldArchives = true;
+    }
 
     if (existsSync(finalDir)) {
       rmSync(finalDir, { recursive: true, force: true });
     }
 
     renameSync(tempDir, finalDir);
+
+    if (hasOldArchives) {
+      const newArchivesDir = join(finalDir, 'archives');
+      for (const file of readdirSync(tempArchivesBackup)) {
+        renameSync(join(tempArchivesBackup, file), join(newArchivesDir, file));
+      }
+      rmSync(tempArchivesBackup, { recursive: true, force: true });
+    }
     tempCreated = false;
 
     const response: UploadResponse = {

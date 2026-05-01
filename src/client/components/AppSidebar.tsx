@@ -112,7 +112,7 @@ export function AppSidebar({
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
-          <UploadDialog onSuccess={onRefreshLibraries} />
+          <UploadDialog libraries={libraries} onSuccess={onRefreshLibraries} />
         </div>
         
         <Input 

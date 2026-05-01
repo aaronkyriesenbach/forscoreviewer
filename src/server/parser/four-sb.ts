@@ -80,6 +80,12 @@ export async function extract4sb(
       }
 
       const cleanPath = substitutePath(filename);
+
+      if (cleanPath.endsWith('.4sb')) {
+        entryIndex += 1;
+        continue;
+      }
+
       const outPath = join(outputDir, cleanPath);
       mkdirSync(dirname(outPath), { recursive: true });
       writeFileSync(outPath, decompressed);
