@@ -95,8 +95,9 @@ export function PdfViewer({
 
   const maxPages = useMemo(() => {
     if (pageWidth <= 0 || containerWidth <= 0) return 1;
-    return Math.max(1, Math.floor((containerWidth + PAGE_GAP) / (pageWidth + PAGE_GAP)));
-  }, [pageWidth, containerWidth]);
+    const layoutWidth = zoom > 1 ? Math.floor(pageWidth / zoom) : pageWidth;
+    return Math.max(1, Math.floor((containerWidth + PAGE_GAP) / (layoutWidth + PAGE_GAP)));
+  }, [pageWidth, containerWidth, zoom]);
 
   const pagesPerView = useMemo(() => {
     const desired = userPagesPerView ?? maxPages;
@@ -240,7 +241,8 @@ export function PdfViewer({
         </div>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-auto bg-muted/20 p-4">
+      <div className="relative flex-1 min-w-0">
+      <div ref={containerRef} className="absolute inset-0 overflow-auto bg-muted/20 p-4">
         <Document
           file={pdfUrl}
           onLoadSuccess={({ numPages: n }) => {
@@ -302,6 +304,7 @@ export function PdfViewer({
             </div>
           )}
         </Document>
+      </div>
       </div>
     </div>
   );
