@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import os from 'node:os';
 import { gzipSync } from 'node:zlib';
 
@@ -72,9 +72,7 @@ describe('extract4sb', () => {
     });
 
     it('returns plistData from entry 0 as the decompressed bytes', async () => {
-      const plistContent = readFileSync(
-        resolve(process.cwd(), 'extracted_sample', 'Archive 2026-04-30 15-26-06.4sb'),
-      );
+      const plistContent = Buffer.from('fake plist payload for round-trip test');
       const archive = buildSynthetic4sb([{ filename: 'metadata.plist', data: plistContent }]);
 
       const result = await extract4sb(archive, tmpDir);

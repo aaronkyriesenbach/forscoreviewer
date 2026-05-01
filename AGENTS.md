@@ -13,7 +13,8 @@ forScore Viewer — web app to upload, browse, and view forScore `.4sb` music sh
 forscoreviewer/
 ├── src/
 │   ├── client/              # React SPA (Vite root: src/client)
-│   │   ├── components/      # Feature components (App, PdfViewer, Sidebar, Upload, etc.)
+│   │   ├── App.tsx          # Root component (library selection, score/page state)
+│   │   ├── components/      # Feature components (PdfViewer, Sidebar, Upload, etc.)
 │   │   │   └── ui/          # shadcn/ui primitives (13 files, generated via components.json)
 │   │   ├── hooks/           # Data-fetching hooks (useLibraries, useMetadata, useAnnotations)
 │   │   └── lib/             # API wrappers (api.ts), search (search.ts), cn() utility
@@ -21,10 +22,10 @@ forscoreviewer/
 │   │   ├── routes/          # API route modules (libraries.ts, upload.ts)
 │   │   └── parser/          # .4sb archive extractor (four-sb.ts) + plist→metadata (metadata.ts)
 │   └── shared/              # Types shared across client/server (types.ts = single source of truth)
-├── tests/                   # Vitest unit tests + Playwright e2e
-│   └── e2e/                 # E2E specs + fixtures (PDFs, PNGs, metadata.json)
+├── tests/                   # Vitest unit tests (e2e excluded from vitest via vitest.config.ts)
+│   └── e2e/                 # Playwright e2e specs + fixtures (PDFs, PNGs, metadata.json)
 ├── dist/                    # Built artifacts (committed — client + server bundles)
-└── extracted_sample/        # Sample .4sb data for development
+└── vitest.config.ts         # Vitest config (excludes tests/e2e/**)
 ```
 
 ## WHERE TO LOOK
@@ -40,8 +41,8 @@ forscoreviewer/
 | Add shadcn/ui primitive | Run `npx shadcn@latest add <component>` | Config in `components.json`; aliases point to `@/client/components/ui` |
 | Change client API calls | `src/client/lib/api.ts` | All fetch wrappers + URL builders centralized here |
 | Add React hook | `src/client/hooks/` | Follow existing pattern: fetch → useState → useEffect |
-| Add unit test | `tests/*.test.ts` | Vitest; use `@/` path alias; see `parser.test.ts` for helpers |
-| Add e2e test | `tests/e2e/*.spec.ts` | Playwright; fixtures copied by `global-setup.ts` into DATA_DIR |
+| Add unit test | `tests/*.test.ts` | Vitest; use `@/` path alias; synthetic fixtures only (no external data files) |
+| Add e2e test | `tests/e2e/*.spec.ts` | Playwright (run via `npm run test:e2e`); fixtures in `tests/e2e/fixtures/` copied by `global-setup.ts` into DATA_DIR |
 | Static file serving | `src/server/index.ts` | `/data/:library/documents/*` and `/data/:library/aux/*` handlers |
 
 ## CONVENTIONS
@@ -50,10 +51,11 @@ forscoreviewer/
 - **Imports**: Always use `@/client/...`, `@/server/...`, `@/shared/...` — never relative across module boundaries
 - **shadcn/ui pattern**: Components in `ui/` use `forwardRef` + `cva` variants + `cn()` for class merging
 - **Server framework**: Hono (not Express) — routes use `new Hono()` + `c.req`/`c.json()` API
+- **Tailwind v4**: Uses `@tailwindcss/postcss` (not `tailwindcss` CLI). Design tokens defined as CSS variables with `hsl()` values in `globals.css`, mapped to Tailwind via `@theme inline` block (`--color-*` → `var(--*)`). Add new tokens to both `:root` and `@theme inline`.
 - **No ESLint/Prettier/EditorConfig** configured — formatting is not enforced by tooling
 - **TypeScript strict mode** enabled (`strict: true`)
 - **Dual tsconfig**: `tsconfig.json` (client, module: ESNext) + `tsconfig.server.json` (server, module: NodeNext)
-- **Dual lockfiles**: `package-lock.json` (npm, used by Docker) + `bun.lock` (local dev via Justfile)
+- **Bun for everything**: Bun is used to manage dependencies and run scripts during development and in the Docker image
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -61,7 +63,7 @@ forscoreviewer/
 - **No `@ts-ignore`/`@ts-expect-error`** — fix the type, don't suppress
 - **Do not edit `src/client/components/ui/`** by hand — these are shadcn-generated; re-add via CLI if changes needed
 - **Do not edit `dist/`** — build artifacts are committed but should be regenerated via `npm run build`
-- **Hono `c.req.param('*')` is broken** in v4.12.16 — extract wildcard paths from `c.req.path` instead (see `src/server/index.ts` comments)
+- **Hono `c.req.param('*')` is broken** in v4.12.x — extract wildcard paths from `c.req.path` instead (see `src/server/index.ts` comments)
 
 ## DATA FLOW
 
@@ -117,3 +119,4 @@ docker run -p 3000:3000 -v /path/to/data:/data forscore-viewer
 - **pdfjs-dist alias**: Vite config aliases `pdfjs-dist` to `react-pdf/node_modules/pdfjs-dist` — required for react-pdf compatibility
 - **No CI/CD pipeline** — no GitHub Actions, no automated tests on push
 - **`package.json` main field** is `postcss.config.js` — incorrect but harmless for an app (not a published package)
+- **Test fixtures are synthetic** — `parser.test.ts` builds `.4sb` archives programmatically via `buildSynthetic4sb()`; `metadata.test.ts` builds binary plists via `serializeBplist()` from `bplist-lossless` (no external data files needed)
