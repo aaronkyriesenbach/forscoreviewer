@@ -9,6 +9,7 @@ import { useLibraries } from '@/client/hooks/useLibraries';
 import { useMetadata } from '@/client/hooks/useMetadata';
 import { useAnnotations } from '@/client/hooks/useAnnotations';
 import { useUrlState } from '@/client/hooks/useUrlState';
+import { useFavorites } from '@/client/hooks/useFavorites';
 import { getDocumentUrl } from '@/client/lib/api';
 import { pdfjs } from 'react-pdf';
 import '@/client/globals.css';
@@ -21,16 +22,19 @@ function App() {
     page,
     setlist: activeSetlist,
     setlistIndex: activeSetlistIndex,
+    tab,
     setLibrary,
     setScore,
     setPage,
     replaceLibrary,
     setSetlistItem,
     replaceSetlistItem,
+    setTab,
   } = useUrlState();
 
   const { metadata, isLoading: isLoadingMetadata } = useMetadata(selectedLibrary || null);
   const annotationMap = useAnnotations(selectedLibrary || null);
+  const { favorites, toggleFavorite } = useFavorites(selectedLibrary);
   const [pdfPageCounts, setPdfPageCounts] = useState<Record<string, number>>({});
 
   const handleDocumentPageCount = useCallback((filename: string, numPages: number) => {
@@ -216,6 +220,10 @@ function App() {
           selectedLibrary={selectedLibrary}
           onLibraryChange={setLibrary}
           onRefreshLibraries={refreshLibraries}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+          activeTab={tab}
+          onTabChange={setTab}
         />
       }
     >

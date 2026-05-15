@@ -66,7 +66,7 @@ export function Layout({ sidebar, children }: LayoutProps) {
     >
       <Sidebar>
 
-        <SidebarContent>
+        <SidebarContent className="overflow-hidden">
           {sidebar}
         </SidebarContent>
         <SidebarResizeHandle

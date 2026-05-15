@@ -10,6 +10,7 @@ function state(overrides: Partial<UrlState> = {}): UrlState {
     page: undefined,
     setlist: null,
     setlistIndex: undefined,
+    tab: 'scores',
     ...overrides,
   };
 }

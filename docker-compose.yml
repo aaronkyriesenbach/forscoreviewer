@@ -4,7 +4,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - data:/data
+      - /mnt/data/forscore:/data
     read_only: true
 
 volumes:

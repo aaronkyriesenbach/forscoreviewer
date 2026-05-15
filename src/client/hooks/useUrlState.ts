@@ -1,19 +1,34 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 
+export type SidebarTab = 'scores' | 'favorites' | 'setlists';
+
+const VALID_TABS = new Set<SidebarTab>(['scores', 'favorites', 'setlists']);
+
+function parseTabParam(search?: string): SidebarTab {
+  const params = new URLSearchParams(search ?? window.location.search);
+  const raw = params.get('tab');
+  if (raw && VALID_TABS.has(raw as SidebarTab)) {
+    return raw as SidebarTab;
+  }
+  return 'scores';
+}
+
 export interface UrlState {
   library: string;
   score: string | null;
   page: number | undefined;
   setlist: string | null;
   setlistIndex: number | undefined;
+  tab: SidebarTab;
 }
 
-export function parseUrl(pathname?: string): UrlState {
+export function parseUrl(pathname?: string, search?: string): UrlState {
   const segments = (pathname ?? window.location.pathname)
     .split('/')
     .filter(Boolean)
     .map(decodeURIComponent);
 
+  const effectiveSearch = search ?? (pathname !== undefined ? '' : undefined);
   const library = segments[0] ?? '';
 
   if (segments[1] === 'setlist' && segments[2]) {
@@ -21,7 +36,7 @@ export function parseUrl(pathname?: string): UrlState {
     const setlistIndex =
       rawIndex && Number.isFinite(rawIndex) && rawIndex >= 1 ? rawIndex - 1 : 0;
 
-    return { library, score: null, page: undefined, setlist: segments[2], setlistIndex };
+    return { library, score: null, page: undefined, setlist: segments[2], setlistIndex, tab: 'setlists' };
   }
 
   const rawPage = segments[2] ? parseInt(segments[2], 10) : undefined;
@@ -32,6 +47,7 @@ export function parseUrl(pathname?: string): UrlState {
     page: rawPage && Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : undefined,
     setlist: null,
     setlistIndex: undefined,
+    tab: parseTabParam(effectiveSearch),
   };
 }
 
@@ -53,6 +69,11 @@ export function buildPath(state: UrlState): string {
       path += `/${state.page}`;
     }
   }
+
+  if (state.tab !== 'scores') {
+    path += `?tab=${state.tab}`;
+  }
+
   return path;
 }
 
@@ -80,6 +101,7 @@ export function useUrlState() {
       page: undefined,
       setlist: null,
       setlistIndex: undefined,
+      tab: 'scores',
     };
     setState(next);
     stateRef.current = next;
@@ -93,6 +115,7 @@ export function useUrlState() {
       page: undefined,
       setlist: null,
       setlistIndex: undefined,
+      tab: stateRef.current.tab,
     };
     setState(next);
     stateRef.current = next;
@@ -114,6 +137,7 @@ export function useUrlState() {
       page: undefined,
       setlist: null,
       setlistIndex: undefined,
+      tab: 'scores',
     };
     setState(next);
     stateRef.current = next;
@@ -127,6 +151,7 @@ export function useUrlState() {
       page: undefined,
       setlist,
       setlistIndex,
+      tab: 'setlists',
     };
     setState(next);
     stateRef.current = next;
@@ -140,10 +165,18 @@ export function useUrlState() {
       page: undefined,
       setlist,
       setlistIndex,
+      tab: 'setlists',
     };
     setState(next);
     stateRef.current = next;
     window.history.replaceState(null, '', buildPath(next));
+  }, []);
+
+  const setTab = useCallback((tab: SidebarTab) => {
+    const next: UrlState = { ...stateRef.current, tab };
+    setState(next);
+    stateRef.current = next;
+    window.history.pushState(null, '', buildPath(next));
   }, []);
 
   return {
@@ -152,11 +185,13 @@ export function useUrlState() {
     page: state.page,
     setlist: state.setlist,
     setlistIndex: state.setlistIndex,
+    tab: state.tab,
     setLibrary,
     setScore,
     setPage,
     replaceLibrary,
     setSetlistItem,
     replaceSetlistItem,
+    setTab,
   } as const;
 }
